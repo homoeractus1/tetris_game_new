@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Word Tetris</title>
+    <style>
+      canvas {
+        border: 1px solid black;
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const BLOCK_SIZE = 30;
+      const PHRASES = [
+        "We",
+        "design",
+        "and",
+        "develop",
+        "applications",
+        "that",
+        "run",
+        "the",
+        "world",
+        "and",
+        "showcase",
+        "the",
+        "future",
+      ];
+
+      const fallingBlocks = [];
+
+      let score = 0;
+      let gameOver = false;
+
+      // Generate a random word block
+      function generateBlock() {
+        const word = PHRASES[Math.floor(Math.random() * PHRASES.length)];
+        const color = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
+        return {
+          word: word,
+          color: color,
+          x: Math.floor(Math.random() * (canvas.width - BLOCK_SIZE)),
+          y: 0,
+        };
+      }
+
+      // Check if a block collides with the bottom
+      function checkCollision(block) {
+        return block.y + BLOCK_SIZE > canvas.height;
+      }
+
+      // Check for collisions with phrases and remove matching blocks
+      function checkPhraseCollisions() {
+        for (let i = 0; i < PHRASES.length; i++) {
+          if (PHRASES[i] === "") continue;
+
+          const phraseRect = {
+            x: i * BLOCK_SIZE,
+            y: canvas.height - BLOCK_SIZE,
+            width: PHRASES[i].length * BLOCK_SIZE,
+            height: BLOCK_SIZE,
+          };
+
+          for (let j = fallingBlocks.length - 1; j >= 0; j--) {
+            const block = fallingBlocks[j];
+            const wordRect = {
+              x: block.x,
+              y: block.y,
+              width: BLOCK_SIZE,
+              height: BLOCK_SIZE,
+            };
+
+            if (
+              wordRect.x < phraseRect.x + phraseRect.width &&
+              wordRect.x + wordRect.width > phraseRect.x &&
+              wordRect.y < phraseRect.y + phraseRect.height &&
+              wordRect.y + wordRect.height > phraseRect.y
+            ) {
+              if (block.word === PHRASES[i]) {
+                PHRASES[i] = "";
+                fallingBlocks.splice(j, 1);
+                score++;
+              }
+            }
+          }
+        }
+      }
+
+      // Game loop
+      function gameLoop() {
+        if (gameOver) return;
+
+        // Generate new blocks
+        if (fallingBlocks.length < 5) {
+          fallingBlocks.push(generateBlock());
+        }
+
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Move and draw the falling blocks
+        for (let i = 0; i < fallingBlocks.length; i++) {
+          const block = fallingBlocks[i];
+          block.y += 1;
+
+          ctx.fillStyle = block.color;
+          ctx.fillRect(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
+
+          ctx.fillStyle = "black";
+          ctx.fillText(block.word, block.x + 10, block.y + 20);
+
+          // Check for collisions with the bottom
+          if (checkCollision(block)) {
+            gameOver = true;
+            break;
+          }
+        }
+
+        // Draw the phrases
+        for (let i = 0; i < PHRASES.length; i++) {
+          if (PHRASES[i] !== "") {
+            ctx.strokeRect(
+              i * BLOCK_SIZE,
+              canvas.height - BLOCK_SIZE,
+              PHRASES[i].length * BLOCK_SIZE,
+              BLOCK_SIZE
+            );
+            ctx.fillStyle = "black";
+            ctx.fillText(PHRASES[i], i * BLOCK_SIZE + 10, canvas.height - 10);
+          }
+        }
+
+        // Check for collisions with phrases and remove matching blocks
+        checkPhraseCollisions();
+
+        // Display score
+        ctx.font = "24px Arial";
+        ctx.fillText("Score: " + score, 20, 40);
+
+        // Request the next frame
+        requestAnimationFrame(gameLoop);
+      }
+
+      // Start the game loop
+      gameLoop();
+    </script>
+  </body>
+</html>
